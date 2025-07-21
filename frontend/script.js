@@ -1,0 +1,432 @@
+// DOM Content Loaded
+document.addEventListener("DOMContentLoaded", function () {
+  loadProducts();
+  // Fungsi untuk mengambil dan menampilkan Art Prints
+  function loadArtPrints() {
+    const container = document.getElementById("prints-grid-container");
+    if (!container) return; // Hanya jalankan jika container ada di halaman ini
+
+    fetch("/api/artprints")
+      .then((response) => response.json())
+      .then((prints) => {
+        container.innerHTML = ""; // Kosongkan container
+        prints.forEach((print) => {
+          const card = document.createElement("div");
+          card.className = "print-card";
+          card.innerHTML = `
+                        <div class="print-image">
+                            <svg width="100%" height="200" viewBox="0 0 300 200"><rect width="100%" height="100%" fill="#E6F3FF"/></svg>
+                        </div>
+                        <div class="print-info">
+                            <h3>${print.title}</h3>
+                            <p class="artist">${print.artist}</p>
+                            <p class="price">IDR ${print.price.toLocaleString()}</p>
+                        </div>
+                    `;
+          container.appendChild(card);
+        });
+      })
+      .catch((error) => console.error("Error fetching art prints:", error));
+  }
+
+  // Fungsi untuk mengambil dan menampilkan Products
+  function loadProducts() {
+    // Pilih container di halaman products.html
+    const container = document.getElementById("products-grid-container");
+
+    // Jika container tidak ditemukan di halaman ini, hentikan fungsi
+    if (!container) {
+      return;
+    }
+
+    // Ambil data dari backend
+    fetch("/api/products")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Gagal mengambil data produk");
+        }
+        return response.json();
+      })
+      .then((products) => {
+        // Kosongkan container sebelum mengisi dengan data baru
+        container.innerHTML = "";
+
+        if (products === null || products.length === 0) {
+          container.innerHTML = "<p>Belum ada produk yang tersedia.</p>";
+          return;
+        }
+
+        // Loop setiap produk dan buat kartu HTML-nya
+        products.forEach((product) => {
+          const card = document.createElement("div");
+          card.className = "product-card";
+
+          // --- BAGIAN YANG DIPERBARUI DIMULAI DI SINI ---
+
+          // Variabel untuk menampung HTML gambar
+          let imageHtml;
+
+          // Periksa apakah product.image ada dan tidak kosong
+          if (product.image && product.image.trim() !== "") {
+            // Jika ada URL gambar, gunakan tag <img>
+            imageHtml = `<img src="${product.image}" alt="${product.name}" style="width: 100%; height: 100%; object-fit: cover;">`;
+          } else {
+            // Jika tidak ada, gunakan SVG placeholder sebagai fallback
+            imageHtml = `
+                        <svg width="100%" height="250" viewBox="0 0 300 250">
+                            <rect width="100%" height="100%" fill="#f0f0f0"/>
+                            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#aaa" font-size="16">${product.name}</text>
+                        </svg>
+                    `;
+          }
+
+          // Gabungkan semua menjadi satu kartu produk
+          card.innerHTML = `
+                    <div class="product-image">
+                        ${imageHtml}
+                    </div>
+                    <div class="product-info">
+                        <h3>${product.name}</h3>
+                        <p class="product-type">${product.description}</p>
+                    </div>
+                `;
+
+          // --- BAGIAN YANG DIPERBARUI BERAKHIR DI SINI ---
+
+          // Tambahkan kartu yang sudah jadi ke dalam container
+          container.appendChild(card);
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching products:", error);
+        // Tampilkan pesan error di halaman
+        container.innerHTML = "<p>Terjadi kesalahan saat memuat produk.</p>";
+      });
+  }
+
+  // Panggil fungsi-fungsi di atas untuk memuat data
+  loadArtPrints();
+  loadProducts();
+
+  // Mobile Navigation Toggle
+  const header = document.querySelector(".header");
+  const navMenu = document.querySelector(".nav-menu");
+
+  // Create mobile menu toggle button
+  const mobileToggle = document.createElement("button");
+  mobileToggle.className = "mobile-toggle";
+  mobileToggle.innerHTML = "☰";
+  mobileToggle.style.display = "none";
+  mobileToggle.style.background = "none";
+  mobileToggle.style.border = "none";
+  mobileToggle.style.fontSize = "24px";
+  mobileToggle.style.cursor = "pointer";
+
+  // Insert mobile toggle before nav actions
+  const navActions = document.querySelector(".nav-actions");
+  navActions.parentNode.insertBefore(mobileToggle, navActions);
+
+  // Mobile menu functionality
+  mobileToggle.addEventListener("click", function () {
+    navMenu.classList.toggle("mobile-active");
+  });
+
+  // Smooth scrolling for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
+      const href = this.getAttribute("href");
+      if (href && href !== "#") {
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }
+    });
+  });
+
+  // Frame showcase carousel functionality
+  const frameShowcase = document.querySelector(".frame-showcase");
+  const frameItems = document.querySelectorAll(".frame-item");
+  let currentIndex = 0;
+
+  // Auto-rotate frames every 3 seconds
+  setInterval(() => {
+    frameItems.forEach((item, index) => {
+      item.style.transform = `translateX(${
+        (index - currentIndex) * 140
+      }px) scale(${index === currentIndex ? 1.1 : 1})`;
+      item.style.zIndex = index === currentIndex ? 10 : 1;
+    });
+    currentIndex = (currentIndex + 1) % frameItems.length;
+  }, 3000);
+
+  // Video placeholder click functionality
+  const videoPlaceholder = document.querySelector(".video-placeholder");
+  if (videoPlaceholder) {
+    videoPlaceholder.addEventListener("click", function () {
+      // Simulate video play (in real implementation, this would open a video modal)
+      this.style.background = "#000";
+      this.innerHTML = '<p style="color: white;">Video would play here</p>';
+    });
+  }
+
+  // Button click animations
+  document.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", function (e) {
+      // Create ripple effect
+      const ripple = document.createElement("span");
+      const rect = this.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const x = e.clientX - rect.left - size / 2;
+      const y = e.clientY - rect.top - size / 2;
+
+      ripple.style.width = ripple.style.height = size + "px";
+      ripple.style.left = x + "px";
+      ripple.style.top = y + "px";
+      ripple.style.position = "absolute";
+      ripple.style.borderRadius = "50%";
+      ripple.style.background = "rgba(255,255,255,0.3)";
+      ripple.style.transform = "scale(0)";
+      ripple.style.animation = "ripple 0.6s linear";
+      ripple.style.pointerEvents = "none";
+
+      this.style.position = "relative";
+      this.style.overflow = "hidden";
+      this.appendChild(ripple);
+
+      setTimeout(() => {
+        ripple.remove();
+      }, 600);
+    });
+  });
+
+  // Scroll animations
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: "0px 0px -50px 0px",
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = "1";
+        entry.target.style.transform = "translateY(0)";
+      }
+    });
+  }, observerOptions);
+
+  // Observe elements for scroll animations
+  document
+    .querySelectorAll(".frame-card, .feature, .service-card")
+    .forEach((el) => {
+      el.style.opacity = "0";
+      el.style.transform = "translateY(30px)";
+      el.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+      observer.observe(el);
+    });
+
+  // Header scroll effect
+  let lastScrollTop = 0;
+  window.addEventListener("scroll", function () {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+    if (scrollTop > lastScrollTop && scrollTop > 100) {
+      // Scrolling down
+      header.style.transform = "translateY(-100%)";
+    } else {
+      // Scrolling up
+      header.style.transform = "translateY(0)";
+    }
+
+    // Add shadow when scrolled
+    if (scrollTop > 10) {
+      header.style.boxShadow = "0 2px 20px rgba(0,0,0,0.15)";
+    } else {
+      header.style.boxShadow = "0 2px 10px rgba(0,0,0,0.1)";
+    }
+
+    lastScrollTop = scrollTop;
+  });
+
+  // Form validation for contact forms (if any)
+  document.querySelectorAll("form").forEach((form) => {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      // Basic validation
+      const inputs = this.querySelectorAll(
+        "input[required], textarea[required]"
+      );
+      let isValid = true;
+
+      inputs.forEach((input) => {
+        if (!input.value.trim()) {
+          input.style.borderColor = "#ff4444";
+          isValid = false;
+        } else {
+          input.style.borderColor = "#ddd";
+        }
+      });
+
+      if (isValid) {
+        // Simulate form submission
+        alert("Thank you for your message! We will get back to you soon.");
+        this.reset();
+      }
+    });
+  });
+
+  // Lazy loading for images
+  const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        if (img.dataset.src) {
+          img.src = img.dataset.src;
+          img.removeAttribute("data-src");
+          observer.unobserve(img);
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll("img[data-src]").forEach((img) => {
+    imageObserver.observe(img);
+  });
+
+  // WhatsApp chat simulation
+  document.querySelectorAll(".contact-icon").forEach((icon) => {
+    icon.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (this.textContent === "📱") {
+        alert("WhatsApp chat would open here in a real implementation");
+      } else if (this.textContent === "✉") {
+        alert("Email client would open here");
+      } else if (this.textContent === "📷") {
+        alert("Instagram would open here");
+      }
+    });
+  });
+
+  // Service card interactions
+  document.querySelectorAll(".service-card").forEach((card) => {
+    card.addEventListener("mouseenter", function () {
+      this.style.transform = "translateY(-10px)";
+      this.style.boxShadow = "0 20px 40px rgba(0,0,0,0.1)";
+    });
+
+    card.addEventListener("mouseleave", function () {
+      this.style.transform = "translateY(0)";
+      this.style.boxShadow = "none";
+    });
+  });
+
+  // Frame card hover effects
+  document.querySelectorAll(".frame-card").forEach((card) => {
+    card.addEventListener("mouseenter", function () {
+      const frameImage = this.querySelector(".frame-border");
+      frameImage.style.transform = "scale(1.05) rotateY(5deg)";
+    });
+
+    card.addEventListener("mouseleave", function () {
+      const frameImage = this.querySelector(".frame-border");
+      frameImage.style.transform = "scale(1) rotateY(0deg)";
+    });
+  });
+});
+
+// Add CSS for ripple animation
+const style = document.createElement("style");
+style.textContent = `
+    @keyframes ripple {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+    
+    .mobile-toggle {
+        display: none !important;
+    }
+    
+    @media (max-width: 768px) {
+        .mobile-toggle {
+            display: block !important;
+        }
+        
+        .nav-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .nav-menu.mobile-active {
+            display: flex;
+        }
+        
+        .header {
+            transition: transform 0.3s ease;
+        }
+    }
+    
+    .service-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .frame-border {
+        transition: transform 0.3s ease;
+    }
+`;
+document.head.appendChild(style);
+
+// BACKEND GOLANG
+
+/**
+ * Fungsi untuk mengupdate data produk.
+ * @param {string} productId - ID dari produk yang akan diupdate.
+ * @param {object} updatedData - Objek berisi data baru untuk produk.
+ * Contoh: { name: "New Product Name", description: "New Desc" }
+ */
+function updateProduct(productId, updatedData) {
+  fetch(`/api/products/${productId}`, {
+    method: "PUT", // Gunakan metode PUT untuk update
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(updatedData), // Kirim data baru dalam format JSON
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log("Produk berhasil diupdate:", data);
+      alert("Produk berhasil diupdate!");
+      // Di sini Anda bisa memuat ulang daftar produk atau memperbarui DOM secara langsung
+      // Contoh: loadProducts();
+    })
+    .catch((error) => {
+      console.error("Error updating product:", error);
+      alert("Gagal mengupdate produk.");
+    });
+}
+
+// Contoh pemanggilan fungsi:
+// Misalkan Anda memiliki form untuk mengedit produk dengan ID "2"
+// updateProduct("2", {
+//   name: "Love Story Updated",
+//   description: "A beautiful photo collage for your loved ones.",
+//   image: "..."
+// });
